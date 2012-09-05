@@ -169,14 +169,19 @@ abstract class AbstractFactory implements SecurityFactoryInterface
     protected function createAuthenticationSuccessHandler($container, $id, $config)
     {
         if (isset($config['success_handler'])) {
-            return $config['success_handler'];
+            $successHandlerId = $config['success_handler'];
+            if (!$container->hasDefinition($successHandlerId)) {
+                return $successHandlerId;
+            }
+            $successHandler = $container->getDefinition($successHandlerId);
+        } else {
+            $successHandlerId = 'security.authentication.success_handler.'.$id.'.'.str_replace('-', '_', $this->getKey());
+
+            $successHandler = $container->setDefinition($successHandlerId, new DefinitionDecorator('security.authentication.success_handler'));
+            $successHandler->addMethodCall('setProviderKey', array($id));
         }
 
-        $successHandlerId = 'security.authentication.success_handler.'.$id.'.'.str_replace('-', '_', $this->getKey());
-
-        $successHandler = $container->setDefinition($successHandlerId, new DefinitionDecorator('security.authentication.success_handler'));
         $successHandler->replaceArgument(1, array_intersect_key($config, $this->defaultSuccessHandlerOptions));
-        $successHandler->addMethodCall('setProviderKey', array($id));
 
         return $successHandlerId;
     }
